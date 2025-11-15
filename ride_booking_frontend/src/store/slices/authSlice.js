@@ -11,7 +11,7 @@ const initialToken = (() => {
 const initialState = {
   isAuthenticated: !!initialToken,
   token: initialToken,
-  user: initialToken ? { name: 'Demo Rider' } : null,
+  user: initialToken ? { name: 'Rider' } : null,
 };
 
 /**

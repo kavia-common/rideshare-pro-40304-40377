@@ -4,15 +4,20 @@ This project provides a minimal React template with a clean, modern UI and minim
 
 ## Environment
 
-Create a `.env` file:
+Create a `.env` file (or copy `.env.example`):
 
 ```
 REACT_APP_API_BASE=http://localhost:4000
 REACT_APP_WS_URL=ws://localhost:4000/ws
 REACT_APP_FRONTEND_URL=http://localhost:3000
+REACT_APP_BACKEND_URL=http://localhost:4000
 ```
 
-These variables configure the backend REST base and the WebSocket endpoint used by hooks/services.
+These variables configure:
+- REACT_APP_API_BASE: Backend REST base (must expose /healthz, /auth/*, /rides)
+- REACT_APP_WS_URL: WebSocket endpoint (default ws://localhost:4000/ws)
+- REACT_APP_FRONTEND_URL: For backend CORS to allow http://localhost:3000
+- REACT_APP_BACKEND_URL: Optional alias used by api client
 
 ## Features
 

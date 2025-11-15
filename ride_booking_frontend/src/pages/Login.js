@@ -2,27 +2,65 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../store/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../services/apiClient';
 
 /**
  * PUBLIC_INTERFACE
- * Login page with minimal fields to simulate JWT auth and store token in Redux/localStorage.
+ * Login page with backend JWT auth. Falls back to registration on 401 for convenience in dev.
  */
 export default function Login() {
   const [email, setEmail] = useState('demo@rideshare.pro');
   const [password, setPassword] = useState('password');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  async function doLogin() {
+    const res = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    return res;
+  }
+
+  async function doRegister() {
+    const res = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    return res;
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    // Simulate API auth success
-    setTimeout(() => {
-      dispatch(loginSuccess({ token: 'demo-token', user: { name: 'Demo Rider', email } }));
-      setLoading(false);
+    setError(null);
+    try {
+      let result;
+      try {
+        result = await doLogin();
+      } catch (e1) {
+        // if unauthorized, attempt register then login
+        if (String(e1?.message || '').includes('401')) {
+          await doRegister();
+          result = await doLogin();
+        } else {
+          throw e1;
+        }
+      }
+      dispatch(
+        loginSuccess({
+          token: result.token,
+          user: { id: result.user?.id, email: result.user?.email, name: result.user?.email?.split('@')[0] || 'Rider' },
+        })
+      );
       navigate('/book');
-    }, 600);
+    } catch (e) {
+      setError(e?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -38,6 +76,7 @@ export default function Login() {
             <span>🔒</span>
             <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder="Password" required />
           </label>
+          {error && <div className="subtitle" style={{ color: '#EF4444' }}>{error}</div>}
           <button className="btn" type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</button>
         </form>
       </div>
