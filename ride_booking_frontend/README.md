@@ -2,6 +2,18 @@
 
 This project provides a minimal React template with a clean, modern UI and minimal dependencies.
 
+## Environment
+
+Create a `.env` file:
+
+```
+REACT_APP_API_BASE=http://localhost:4000
+REACT_APP_WS_URL=ws://localhost:4000/ws
+REACT_APP_FRONTEND_URL=http://localhost:3000
+```
+
+These variables configure the backend REST base and the WebSocket endpoint used by hooks/services.
+
 ## Features
 
 - **Lightweight**: No heavy UI frameworks - uses only vanilla CSS and React

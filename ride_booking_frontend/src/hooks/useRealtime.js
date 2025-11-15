@@ -3,7 +3,8 @@ import { getWsUrl, apiFetch } from '../services/apiClient';
 
 /**
  * PUBLIC_INTERFACE
- * useRealtime subscribes to /rides/:id updates via WebSocket if available, otherwise polls.
+ * useRealtime subscribes to ride updates via WebSocket (with subscribe message) or falls back to polling the REST resource.
+ * Expects resourcePath like "/rides/:id".
  * Returns { data, error, isWs }.
  */
 export function useRealtime(resourcePath, { intervalMs = 3000 } = {}) {
@@ -11,15 +12,10 @@ export function useRealtime(resourcePath, { intervalMs = 3000 } = {}) {
   const [error, setError] = useState(null);
   const [isWs, setIsWs] = useState(false);
   const wsRef = useRef(null);
-  const pathRef = useRef(resourcePath);
-
-  useEffect(() => {
-    pathRef.current = resourcePath;
-  }, [resourcePath]);
 
   useEffect(() => {
     const wsBase = getWsUrl();
-    const canWs = typeof WebSocket !== 'undefined' && wsBase;
+    const canWs = typeof WebSocket !== 'undefined' && !!wsBase;
     let pollId;
 
     async function poll() {
@@ -34,9 +30,22 @@ export function useRealtime(resourcePath, { intervalMs = 3000 } = {}) {
 
     if (canWs) {
       try {
-        const ws = new WebSocket(`${wsBase}${resourcePath}`);
+        // Connect to base WS URL (e.g., ws://localhost:4000/ws)
+        const ws = new WebSocket(wsBase);
         wsRef.current = ws;
         setIsWs(true);
+
+        ws.onopen = () => {
+          // If resourcePath looks like /rides/:id, extract id and send subscribe
+          const m = /^\/rides\/([^\/\s]+)/.exec(resourcePath || '');
+          const rideId = m ? m[1] : null;
+          if (rideId) {
+            try {
+              ws.send(JSON.stringify({ type: 'subscribe', rideId }));
+            } catch {}
+          }
+        };
+
         ws.onmessage = (ev) => {
           try {
             const payload = JSON.parse(ev.data);
@@ -45,7 +54,7 @@ export function useRealtime(resourcePath, { intervalMs = 3000 } = {}) {
             // ignore
           }
         };
-        ws.onerror = (e) => {
+        ws.onerror = () => {
           setError(new Error('WebSocket error'));
         };
         ws.onclose = () => {
@@ -63,7 +72,9 @@ export function useRealtime(resourcePath, { intervalMs = 3000 } = {}) {
 
     return () => {
       if (wsRef.current) {
-        try { wsRef.current.close(); } catch {}
+        try {
+          wsRef.current.close();
+        } catch {}
         wsRef.current = null;
       }
       if (pollId) clearInterval(pollId);
