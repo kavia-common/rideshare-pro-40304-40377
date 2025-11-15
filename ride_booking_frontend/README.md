@@ -14,10 +14,18 @@ REACT_APP_BACKEND_URL=http://localhost:4000
 ```
 
 These variables configure:
-- REACT_APP_API_BASE: Backend REST base (must expose /healthz, /auth/*, /rides)
+- REACT_APP_API_BASE: Backend REST base (must expose /healthz, /auth/*, /rides). Required.
 - REACT_APP_WS_URL: WebSocket endpoint (default ws://localhost:4000/ws)
-- REACT_APP_FRONTEND_URL: For backend CORS to allow http://localhost:3000
+- REACT_APP_FRONTEND_URL: For backend CORS; must match the frontend dev URL (e.g., http://localhost:3000 or your preview URL)
 - REACT_APP_BACKEND_URL: Optional alias used by api client
+
+Backend .env must include:
+- FRONTEND_URL: Must exactly match REACT_APP_FRONTEND_URL (your running frontend URL), otherwise CORS will block auth.
+- JWT_SECRET: Any non-empty string in dev.
+
+Tip: Verify connectivity
+- Open /healthz in your backend: curl http://localhost:4000/healthz
+- The app logs a warning if REACT_APP_API_BASE is missing. Configure it to avoid auth failures.
 
 ## Features
 
